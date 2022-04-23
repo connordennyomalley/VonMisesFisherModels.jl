@@ -43,8 +43,8 @@ struct VonMisesFisherBayesianModel
     κPrior::ContinuousUnivariateDistribution
 end
 
-function gibbsInference(model::VonMisesFisherBayesianModel, X::Matrix, niter::Int)
-    # Markov Chain of samples.
+ function gibbsInference(model::VonMisesFisherBayesianModel, X::Matrix, niter::Int)
+   # Markov Chain of samples.
     res = Array{Tuple{Vector{Float64},Float64}}(undef, niter + 1)
 
     # Initial Parameter Estimate to start the Markov Chain.

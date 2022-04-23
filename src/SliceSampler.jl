@@ -1,6 +1,4 @@
 
-export sliceSample
-
 # Stepping out approach to finding the interval
 function findInterval(f, x0, y, ω, m)		
 	# Process
@@ -80,7 +78,6 @@ function shrinkageSample(f, x0, y, ω, L, R)
 	end
 end
 
-
 function sliceSample(f, ω, m, n, κInit=1, isLog=true)
 	res = Array{Float64}(undef, n)
 	res[1] = κInit # Set this to value from X?
@@ -101,8 +98,8 @@ function sliceSample(f, ω, m, n, κInit=1, isLog=true)
 		end
 
 		# Update omega to be closer to a reasonable value
-		#distances[i-1] = abs(x0 - res[i])
-		#ω = distances[i-1]/i
+		# distances[i-1] = abs(x0 - res[i])
+		# ω = distances[i-1]/i
 		
 	end
 

@@ -4,7 +4,7 @@ using Test
 @testset "VonMisesFisherModels.jl" begin
     # Write your tests here.
 
-function ultimateTest()
+function basicModelTest()
     # Generate some data
     dataμ = [-1, 1, 1] / norm([-1, 1, 1])
     dataκ = 8
@@ -17,9 +17,68 @@ function ultimateTest()
 		resμ = resμ + res[i][1]
 		resκ = resκ + res[i][2]
 	end
-	println((resμ ./ length(res), resκ / length(res)))
+	println("Basic Bayesian results: $(resμ ./ length(res)), $(resκ / length(res))")
 end
 
-@test_nowarn ultimateTest()
+function mixtureTest()
+    mixdataμ = ([-1, 1, 1] / norm([-1, 1, 1, 0]), [1, -1, -1] / norm([1, -1, -1, 0]))
+	mixdataκ = (4.0, 8.0)
+	mixdata = (rand(VonMisesFisher(mixdataμ[1], mixdataκ[1]), 1000), rand(VonMisesFisher(mixdataμ[2], mixdataκ[2]), 1000))
+
+    clusterModel = VonMisesFisherBayesianModel(VonMisesFisher(ones(size(mixdata[1])[1]) / norm(ones(size(mixdata[1])[1])), 0.01), Gamma(1.0,6.0))
+    mixtureModel = VonMisesFisherMixtureModel(clusterModel, 2, 1.0)
+ 
+    rz, rμ, rκ = gibbsInference(mixtureModel, hcat(mixdata[1], mixdata[2]), 1000)
+    println("Mixture results 1: $(rμ[:,1]), $(rκ[1])")
+    println("Mixture results 2: $(rμ[:,2]), $(rκ[2])")
+end
+
+function hiddenMarkovModelTest()
+    # HMM Parameters
+    T = 1000
+    N = 2
+    D = 3
+
+    # Emission Parameters
+    # μs[:,i] = mean of emission variable i
+    # κs[i] = concentration of emission variable i
+    μs = zeros(D, N)
+    κs = zeros(N)
+    dataμ = ([-1, 1, 1] / norm([-1, 1, 1]), [1, -1, -1] / norm([1, -1, -1]))
+    dataκ = (4.0, 8.0)
+    for i = 1:N
+        μs[:, i] = dataμ[i]
+        κs[i] = dataκ[i]
+    end
+
+    # Transition probability matrix.
+    # π[i,j] = P(xⱼ | xᵢ)
+    θ = [0.75 0.25; 0.4 0.6] #hcat(ones(N)/N, ones(N)/N)'
+
+    # Generate data
+    Y = zeros(D, T)
+    X = zeros(Int64, T)
+    X[1] = 1
+    Y[:, 1] = rand(VonMisesFisher(μs[:, 1], κs[1]))
+    for t = 2:T
+        X[t] = rand(Categorical(θ[X[t-1], :]))
+        Y[:, t] = rand(VonMisesFisher(μs[:, X[t]], κs[X[t]]))
+    end
+
+    clusterModel = VonMisesFisherBayesianModel(VonMisesFisher(ones(size(Y)[1]) / norm(ones(size(Y)[1])), 0.01), Gamma(1.0, 6.0))
+    hmm = VonMisesFisherHiddenMarkovModel(clusterModel, 2, 1.0)
+
+    θ, X, μs, κs = gibbsInference(hmm, Y, 1000)
+
+    println("θ = $(θ)")
+    println("μ1 = $(μs[:,1])")
+    println("μ2 = $(μs[:,2])")
+    println("κ  = $(κs)")
+
+end
+
+@test_nowarn basicModelTest()
+@test_nowarn mixtureTest()
+@test_nowarn hiddenMarkovModelTest()
 
 end
