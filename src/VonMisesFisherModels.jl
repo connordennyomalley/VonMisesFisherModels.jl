@@ -8,13 +8,18 @@ export
     VonMisesFisherBayesianModel,
     VonMisesFisherMixtureModel,
     VonMisesFisherHiddenMarkovModel,
-    # VonMisesFisherStateSpaceModel,
+    VonMisesFisherStateSpaceModel,
+    # VonMisesFisherStateSpaceMixtureModel,
 
     # Returns values of the model parameters in an MCMC chain.
-    gibbsInference
+    gibbsInference,
+    filterAux,
+    backwardSampling,
+    smoothingSample
 
 include("SliceSampler.jl")
 include("VonMisesFisherBayesianModel.jl")
 include("VonMisesFisherMixtureModel.jl")
 include("VonMisesFisherHiddenMarkovModel.jl")
+include("VonMisesFisherStateSpaceModel.jl")
 end

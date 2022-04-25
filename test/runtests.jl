@@ -77,8 +77,56 @@ function hiddenMarkovModelTest()
 
 end
 
-@test_nowarn basicModelTest()
-@test_nowarn mixtureTest()
-@test_nowarn hiddenMarkovModelTest()
+# Generate data
+function genDataStateSpace(T)
+    NumSamples = 500
+    D = 3
+    
+    # Measurement Variance
+    M0 = 40.0
+    
+    # System Variance
+    C0 = 60.0 
+    
+    Y = Array{Matrix{Float64}}(undef, T)
+    for t = 1:T
+        Y[t] = zeros(NumSamples, D)
+    end
+    #Y = zeros(T,NumSamples,D)
+    state = zeros(T,D)
+    state[1,:] = [-1, 1, 1] / norm([-1, 1, 1])
+
+    # Generate t=1 samples
+    for n = 1:NumSamples
+        Y[1][n,:] = rand(VonMisesFisher(state[1,:],M0))
+    end
+
+    # Generate remaining dependent samples and states
+    for t = 2:T
+        state[t,:] = rand(VonMisesFisher(state[t-1,:],C0))
+        for i = 1:NumSamples
+            Y[t][i,:] = rand(VonMisesFisher(state[t,:],M0))
+        end
+    end
+    
+    Y, state
+end
+
+function stateSpaceModelTest()
+    data, states = genDataStateSpace(20)
+
+    # Filtering
+    #states, weights = filterAux(data, 5000, 40, 60)
+    
+    #fs = rand(VonMisesFisher(states[20,rand(Categorical(weights[20,:])),:], 60))
+    #sampledStates = backwardSampling(states, fs, 40)
+    sampledStates = smoothingSample(data, 1000, 40, 60)
+
+end
+
+#@test_nowarn basicModelTest()
+#@test_nowarn mixtureTest()
+#@test_nowarn hiddenMarkovModelTest()
+@test_nowarn stateSpaceModelTest()
 
 end
