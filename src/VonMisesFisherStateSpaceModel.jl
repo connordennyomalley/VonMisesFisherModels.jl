@@ -58,7 +58,7 @@ function logpdfX(X, μ, κ)
     
     val = 0
     for i = 1:N
-        val += logpdf(VonMisesFisher(μ,κ),X[i,:])
+        val += logpdf(VonMisesFisher(μ,κ), X[:,i])
     end
     (val)
 end
@@ -70,7 +70,7 @@ end
 ## Auxilary Particle Filter
 function filterAux(Y, numParticles, M0, C0)
     T = size(Y)[1]
-    D = size(Y[1])[2]
+    D = size(Y[1])[1]
 
     N = numParticles
 
@@ -78,18 +78,18 @@ function filterAux(Y, numParticles, M0, C0)
     Nthr = 0.0000001
     
     # State particles
-    α = zeros(T,N,D)
+    α = zeros(T,D,N)
 
     # State particle weights
     w = zeros(T,N)
 
     # Initial particle weights and values
     model = VonMisesFisherBayesianModel(VonMisesFisher(ones(D) / norm(ones(D)), 0.01), Gamma(1.0,6.0))
-    # println(size(Y[1]))
-    α0 = gibbsInference(model, Matrix(Y[1]'), 100)[end][1]
+
+    α0 = gibbsInference(model, Y[1], 100)[end][1]
     for k = 1:N
-        α[1,k,:] = rand(VonMisesFisher(α0, C0))
-        w[1,k] = log(1.0/N) + logpdfX(Y[1], α[1,k,:], M0)
+        α[1,:,k] = rand(VonMisesFisher(α0, C0))
+        w[1,k] = log(1.0/N) + logpdfX(Y[1], α[1,:,k], M0)
     end
     w[1,:] = exp.(w[1,:] .- maximum(w[1,:]))
     w[1,:] = w[1,:] / sum(w[1,:])
@@ -97,13 +97,13 @@ function filterAux(Y, numParticles, M0, C0)
     ## Propagate particles
     for t = 1:T-1
         g = zeros(N)
-        μ = zeros(N,D)
+        μ = zeros(D,N)
         for i = 1:N
             # Estimate of x[t+1]
-            μ[i,:] = α[t,i,:]
-            μ[i,:] = μ[i,:] / norm(μ[i,:])
+            μ[:,i] = α[t,:,i]
+            μ[:,i] = μ[:,i] / norm(μ[:,i])
 
-            g[i] = log(w[t,i]) + logpdfX(Y[t+1], μ[i,:], M0)
+            g[i] = log(w[t,i]) + logpdfX(Y[t+1], μ[:,i], M0)
             
         end
         g = exp.(g .- maximum(g))
@@ -113,21 +113,20 @@ function filterAux(Y, numParticles, M0, C0)
         for i = 1:N
             # Auxiliary Indicator
             j = rand(Categorical(g))
-            α[t+1,i,:] = rand(VonMisesFisher(α[t,j,:], C0))
+            α[t+1,:,i] = rand(VonMisesFisher(α[t,:,j], C0))
 
-            w[t+1,i] = logpdfX(Y[t+1], α[t+1,i,:], M0) - logpdfX(Y[t+1], μ[j,:], M0)
+            w[t+1,i] = logpdfX(Y[t+1], α[t+1,:,i], M0) - logpdfX(Y[t+1], μ[:,j], M0)
         end
-        
         w[t+1,:] = exp.(w[t+1,:] .- maximum(w[t+1,:]))
         w[t+1,:] = w[t+1,:] / sum(w[t+1,:])
 
         # Resampling
         Neff = 1 / sum(w[t+1,:] .^ 2)
         #if Neff < Nthr
-        if false
+        if Neff < Nthr
             for i = 1:N
                 v = rand(Categorical(w[t+1,:]))
-                α[t+1,i,:] = rand(VonMisesFisher(α[t+1,v,:], C0))
+                α[t+1,:,i] = rand(VonMisesFisher(α[t+1,:,v], C0))
             end
             w[t+1,:] = ones(N) / N
         end
@@ -140,23 +139,25 @@ function backwardSampling(X, filterSample, C0)
     # X are filtering particles.
     
     T = size(X)[1]
-    N = size(X)[2]
-    D = size(X)[3]
+    N = size(X)[3]
+    D = size(X)[2]
 
     # Weights
     w = zeros(T,N)
-    sX = zeros(T,D)
-    sX[T,:] = filterSample
+    sX = zeros(D,T)
+    
+    # Initial sample to work backwards from
+    sX[:,T] = filterSample
     
     for t = T-1:-1:1
         for i = 1:N
             w[t,:] = zeros(N)
             for j = 1:N
-                w[t,j] = pdf(VonMisesFisher(X[t,i,:], C0), X[t+1,i,:])
+                w[t,j] = pdf(VonMisesFisher(X[t,:,i], C0), X[t+1,:,i])
             end
             w[t,:] = w[t,:] / sum(w[t,:])
 
-            sX[t,:] = X[t, rand(Categorical(w[t,:])),:]
+            sX[:,t] = X[t, :, rand(Categorical(w[t,:]))]
         end
     end
 
@@ -170,7 +171,7 @@ function smoothingSample(Y, numParticles, M0, C0)
     X, fw = filterAux(Y, numParticles, M0, C0)
 
     # Sample state at t=T
-    fs = rand(VonMisesFisher(X[T,rand(Categorical(fw[T,:])),:], C0))
+    fs = rand(VonMisesFisher(X[T,:,rand(Categorical(fw[T,:]))], C0))
     
     # Backward sampling using particles
     backwardSampling(X, fs, M0)

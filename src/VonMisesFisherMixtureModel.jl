@@ -1,10 +1,20 @@
 
+"""
+    VonMisesFisherMixtureModel
+
+Represents a basic VMF Mixture Model.
+"""
 struct VonMisesFisherMixtureModel
     clusterDist::VonMisesFisherBayesianModel
     K::Int
     β::Float64
 end
 
+"""
+    gibbsInference(model::VonMisesFisherMixtureModel, X::Matrix, niter::Int) 
+
+Generates an MCMC Chain of parameter sampled values.
+"""
 function gibbsInference(model::VonMisesFisherMixtureModel, X::Matrix, niter::Int)
     D = size(X)[1]
     N = size(X)[2]
@@ -54,9 +64,10 @@ function gibbsInference(model::VonMisesFisherMixtureModel, X::Matrix, niter::Int
                 # (sum(Xₖ, dims=2)[:,1] / size(Xₖ)[2], MLEκ(Xₖ))
                 μs[:, kᵢ], κs[kᵢ] = gibbsInference(model.clusterDist, Xₖ, 100)[end]
             else
-                # Leave the same as old volue for cluster parameters
+                # Leave the same as old value for cluster parameters
             end
         end
     end
+
     (z,μs,κs)
 end

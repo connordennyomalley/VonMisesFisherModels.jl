@@ -1,8 +1,17 @@
+"""
+    logC(κ, D)
 
+Log of the constant in the Von Mises-Fisher distribution.
+"""
 function logC(κ, D)
     log((2 * π)^(-D/2)) + log(κ^((D/2)-1)) - (log(besselix(((D/2)-1), κ)) + κ)
 end
 
+"""
+    logvMFpdf(μ, κ, X)
+
+Log pdf of the Von Mises-Fisher for multiple data points.
+"""
 function logvMFpdf(μ, κ, X)
     N = size(X)[2]
     D = size(X)[1]
@@ -10,6 +19,11 @@ function logvMFpdf(μ, κ, X)
     N * logC(κ[1], D) + κ[1] .* (μ' * sum(X, dims=2)[:,1])
 end
 
+"""
+    samplePosterior(μ, κ, X, priorDist::VonMisesFisher)
+
+Sample from the posterior of μ for a basic Von Mises-Fisher Bayesian model.
+"""
 function samplePosteriorμ(μ, κ, X, priorDist::VonMisesFisher)
     μ0 = priorDist.μ
     κ0 = priorDist.κ
@@ -19,6 +33,11 @@ function samplePosteriorμ(μ, κ, X, priorDist::VonMisesFisher)
     rand(VonMisesFisher(νX / νXNorm, νXNorm))
 end
 
+"""
+    posteriorDensityκ(μ, κ, X, priorDist) 
+
+Posterior density of κ for a basic Von Mises-Fisher Bayesian model.
+"""
 function posteriorDensityκ(μ, κ, X, priorDist)
     if κ < 0
         return 0
@@ -43,12 +62,12 @@ struct VonMisesFisherBayesianModel
     κPrior::ContinuousUnivariateDistribution
 end
 
- function gibbsInference(model::VonMisesFisherBayesianModel, X::Matrix, niter::Int)
-   # Markov Chain of samples.
+function gibbsInference(model::VonMisesFisherBayesianModel, X::Matrix, niter::Int)
+    # Markov Chain of samples.
     res = Array{Tuple{Vector{Float64},Float64}}(undef, niter + 1)
 
     # Initial Parameter Estimate to start the Markov Chain.
-    μ = sum(X, dims=2)[:, 1] / size(X)[2]
+    μ = sum(X, dims=2)[:,1] / size(X)[2]
     κ = MLEκ(X)
 
     res[1] = (μ, κ)

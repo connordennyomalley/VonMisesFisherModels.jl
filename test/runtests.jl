@@ -21,7 +21,7 @@ function basicModelTest()
 end
 
 function mixtureTest()
-    mixdataμ = ([-1, 1, 1] / norm([-1, 1, 1, 0]), [1, -1, -1] / norm([1, -1, -1, 0]))
+    mixdataμ = ([-1, 1, 1] / norm([-1, 1, 1]), [1, -1, -1] / norm([1, -1, -1]))
 	mixdataκ = (4.0, 8.0)
 	mixdata = (rand(VonMisesFisher(mixdataμ[1], mixdataκ[1]), 1000), rand(VonMisesFisher(mixdataμ[2], mixdataκ[2]), 1000))
 
@@ -90,22 +90,23 @@ function genDataStateSpace(T)
     
     Y = Array{Matrix{Float64}}(undef, T)
     for t = 1:T
-        Y[t] = zeros(NumSamples, D)
+        #  Y[t] = zeros(NumSamples, D)
+        Y[t] = zeros(D, NumSamples)
     end
     #Y = zeros(T,NumSamples,D)
-    state = zeros(T,D)
-    state[1,:] = [-1, 1, 1] / norm([-1, 1, 1])
+    state = zeros(D,T)
+    state[:,1] = [-1, 1, 1] / norm([-1, 1, 1])
 
     # Generate t=1 samples
     for n = 1:NumSamples
-        Y[1][n,:] = rand(VonMisesFisher(state[1,:],M0))
+        Y[1][:,n] = rand(VonMisesFisher(state[:,1],M0))
     end
 
     # Generate remaining dependent samples and states
     for t = 2:T
-        state[t,:] = rand(VonMisesFisher(state[t-1,:],C0))
+        state[:,t] = rand(VonMisesFisher(state[:,t-1],C0))
         for i = 1:NumSamples
-            Y[t][i,:] = rand(VonMisesFisher(state[t,:],M0))
+            Y[t][:,i] = rand(VonMisesFisher(state[:,t],M0))
         end
     end
     
@@ -116,7 +117,7 @@ function stateSpaceModelTest()
     data, states = genDataStateSpace(20)
 
     # Filtering
-    #states, weights = filterAux(data, 5000, 40, 60)
+    # states, weights = filterAux(data, 5000, 40, 60)
     
     #fs = rand(VonMisesFisher(states[20,rand(Categorical(weights[20,:])),:], 60))
     #sampledStates = backwardSampling(states, fs, 40)

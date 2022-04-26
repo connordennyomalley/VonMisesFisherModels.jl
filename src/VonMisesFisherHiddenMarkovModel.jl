@@ -4,8 +4,7 @@ struct VonMisesFisherHiddenMarkovModel
     β::Float64
 end
 
-function filtering(Y, θ, μs, κs, α, t, l)
-    T = size(Y)[2]
+function filtering(Y, μs, κs, α, t, l)
     N = size(μs)[2]
 
     emission = exp(logpdf(VonMisesFisher(μs[:,l], κs[l]), Y[:,t]))
@@ -43,7 +42,7 @@ function forwardFiltering(Y, θ, μs, κs)
     for t = 2:T
         for l = 1:N
             for k = 1:N
-                f[t-1,k] = filtering(Y, θ, μs, κs, α, t-1, k)
+                f[t-1,k] = filtering(Y, μs, κs, α, t-1, k)
                 #println("res = $((f[t-1,k]))")
                 α[t,l] += (θ[k,l]) * f[t-1,k]
             end
@@ -51,7 +50,7 @@ function forwardFiltering(Y, θ, μs, κs)
     end
 
     for k = 1:N
-        f[T,k] = filtering(Y, θ, μs, κs, α, T, k)
+        f[T,k] = filtering(Y, μs, κs, α, T, k)
     end
     α, f
 end
@@ -82,6 +81,11 @@ function forwardFilteringBackwardSampling(Y, θ, μs, κs)
     S
 end
 
+"""
+    countTransitions(X, i, j)
+
+Returns given a path through states how many transitions there are from state i to state j.
+"""
 function countTransistions(X, i, j)
     c = 0
     for k = 1:length(X)-1
