@@ -36,7 +36,7 @@ end
 function hiddenMarkovModelTest()
     # HMM Parameters
     T = 1000
-    N = 2
+    N = 2 # Number of clusters
     D = 3
 
     # Emission Parameters
@@ -56,17 +56,18 @@ function hiddenMarkovModelTest()
     θ = [0.75 0.25; 0.4 0.6] #hcat(ones(N)/N, ones(N)/N)'
 
     # Generate data
-    Y = zeros(D, T)
+    Y = Array{Matrix{Float64}}(undef, T)
     X = zeros(Int64, T)
     X[1] = 1
-    Y[:, 1] = rand(VonMisesFisher(μs[:, 1], κs[1]))
+    Y[1] = rand(VonMisesFisher(μs[:, 1], κs[1]), 500)
     for t = 2:T
         X[t] = rand(Categorical(θ[X[t-1], :]))
-        Y[:, t] = rand(VonMisesFisher(μs[:, X[t]], κs[X[t]]))
+        Y[t] = rand(VonMisesFisher(μs[:, X[t]], κs[X[t]]), 500)
     end
 
-    clusterModel = VonMisesFisherBayesianModel(VonMisesFisher(ones(size(Y)[1]) / norm(ones(size(Y)[1])), 0.01), Gamma(1.0, 6.0))
+    clusterModel = VonMisesFisherBayesianModel(VonMisesFisher(ones(D) / norm(ones(D)), 0.01), Gamma(1.0, 6.0))
     hmm = VonMisesFisherHiddenMarkovModel(clusterModel, 2, 1.0)
+
 
     θ, X, μs, κs = gibbsInference(hmm, Y, 1000)
 
@@ -127,7 +128,7 @@ end
 
 #@test_nowarn basicModelTest()
 #@test_nowarn mixtureTest()
-#@test_nowarn hiddenMarkovModelTest()
-@test_nowarn stateSpaceModelTest()
+@test_nowarn hiddenMarkovModelTest()
+#@test_nowarn stateSpaceModelTest()
 
 end

@@ -6,28 +6,25 @@ end
 
 function filtering(Y, μs, κs, α, t, l)
     N = size(μs)[2]
-
-    emission = exp(logpdf(VonMisesFisher(μs[:,l], κs[l]), Y[:,t]))
-
-    #logprobs = zeros(N)
-    for k = 1:N
-        #logprobs[k] = logvMFpdfSinglex(μs[:,k], κs[k], Y[:,t]) + log(α[t,k])
-    end
-    #maxLogProb = maximum(logprobs)
     
+    # emission = exp(logpdf(VonMisesFisher(μs[:,l], κs[l]), Y[:,t]))
+    emission = logvMFpdf(μs[:,l], κs[l], Y[t])
+
     divisor = 0
     for k = 1:N
         #divisor += exp(logprobs[k] - maxLogProb)
-        divisor += exp(logpdf(VonMisesFisher(μs[:,k], κs[k]), Y[:,t])) * α[t,k]
+        val = logvMFpdf(μs[:,k], κs[k], Y[t])
+        println("Value $(val)")
+        divisor += exp(val) * α[t,k]
     end
 
     #divisor = maxLogProb + log(divisor)
-    
+    println("Divisor: $(divisor)")
     emission * (α[t,l]) / divisor
 end
 
 function forwardFiltering(Y, θ, μs, κs)
-    T = size(Y)[2]
+    T = size(Y)[1]
     N = size(μs)[2]
     
     α = zeros(T,N)
@@ -56,7 +53,7 @@ function forwardFiltering(Y, θ, μs, κs)
 end
 
 function forwardFilteringBackwardSampling(Y, θ, μs, κs)
-    T = size(Y)[2]
+    T = size(Y)[1]
     N = size(μs)[2]
 
     _, f = forwardFiltering(Y, θ, μs, κs)
@@ -97,8 +94,8 @@ function countTransistions(X, i, j)
 end
 
 function gibbsInference(model::VonMisesFisherHiddenMarkovModel, Y, niter)
-    D = size(Y)[1]
-    T = size(Y)[2]
+    D = size(Y[1])[1]
+    T = size(Y)[1]
     β = model.β
     N = model.K
 
@@ -123,11 +120,7 @@ function gibbsInference(model::VonMisesFisherHiddenMarkovModel, Y, niter)
     μs = zeros(D,N)
     κs = zeros(N)
     for n = 1:N
-        Yₙ = Y[:, X .== n]
-        #for n2 = 1:size(Yₙ)[2]
-        #	μs[:,n] = μs[:,n] + Yₙ[:,n2]
-        #end
-        #μs[:,n] = μs[:,n] / size(Yₙ)[2]
+        Yₙ = reduce(hcat, Y[X .== n])
         μs[:,n], κs[n] = gibbsInference(model.clusterDist, Yₙ, 10)[end]
     end
 
@@ -156,7 +149,7 @@ function gibbsInference(model::VonMisesFisherHiddenMarkovModel, Y, niter)
         # Sample emission parameters
         #println("Starting emission parameter sampling")
         for n = 1:N
-            Yₖ = Y[:, X .== n]
+            Yₖ = reduce(hcat, Y[X .== n])
             
             if size(Yₖ)[2] > 1
                 # (sum(Xₖ, dims=2)[:,1] / size(Xₖ)[2], MLEκ(Xₖ))

@@ -27,6 +27,12 @@ Sample from the posterior of μ for a basic Von Mises-Fisher Bayesian model.
 function samplePosteriorμ(μ, κ, X, priorDist::VonMisesFisher)
     μ0 = priorDist.μ
     κ0 = priorDist.κ
+    #  println("")
+    #println(size(X))
+    #println(κ0)
+    #println(μ0)
+    #println(size(κ0 .* μ0))
+    #println(size(κ .* sum(X, dims=2)))
     νX = κ0 .* μ0 + κ .* sum(X, dims=2)[:,1]
     νXNorm = norm(νX)
     #println("$(νX)")
