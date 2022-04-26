@@ -59,10 +59,10 @@ function hiddenMarkovModelTest()
     Y = Array{Matrix{Float64}}(undef, T)
     X = zeros(Int64, T)
     X[1] = 1
-    Y[1] = rand(VonMisesFisher(μs[:, 1], κs[1]), 500)
+    Y[1] = rand(VonMisesFisher(μs[:, 1], κs[1]), 10)
     for t = 2:T
         X[t] = rand(Categorical(θ[X[t-1], :]))
-        Y[t] = rand(VonMisesFisher(μs[:, X[t]], κs[X[t]]), 500)
+        Y[t] = rand(VonMisesFisher(μs[:, X[t]], κs[X[t]]), 10)
     end
 
     clusterModel = VonMisesFisherBayesianModel(VonMisesFisher(ones(D) / norm(ones(D)), 0.01), Gamma(1.0, 6.0))

@@ -10,17 +10,19 @@ function filtering(Y, μs, κs, α, t, l)
     # emission = exp(logpdf(VonMisesFisher(μs[:,l], κs[l]), Y[:,t]))
     emission = logvMFpdf(μs[:,l], κs[l], Y[t])
 
-    divisor = 0
-    for k = 1:N
-        #divisor += exp(logprobs[k] - maxLogProb)
-        val = logvMFpdf(μs[:,k], κs[k], Y[t])
-        println("Value $(val)")
-        divisor += exp(val) * α[t,k]
-    end
+   # divisor_sum = zeros(N)
+    #for k = 1:N
+        ##divisor += exp(logprobs[k] - maxLogProb)
+        #val = logvMFpdf(μs[:,k], κs[k], Y[t])
+        #println("Value $(val)")
+        ##divisor += exp(val) * α[t,k]
+        #divisor_sum[k] = ((val) + log(α[t,k]))
+    #end
+    #divisor = exp(divisor .- maximum)
 
     #divisor = maxLogProb + log(divisor)
-    println("Divisor: $(divisor)")
-    emission * (α[t,l]) / divisor
+    #println("Divisor: $(divisor)")
+    ((emission) + log(α[t,l]))
 end
 
 function forwardFiltering(Y, θ, μs, κs)
@@ -39,9 +41,16 @@ function forwardFiltering(Y, θ, μs, κs)
     for t = 2:T
         for l = 1:N
             for k = 1:N
+                # This is the log! remember needs normalising
                 f[t-1,k] = filtering(Y, μs, κs, α, t-1, k)
+            end
+            f[t-1,:] = exp.(f[t-1,:] .- maximum(f[t-1,:]))
+            f[t-1,:] = f[t-1,:] / sum(f[t-1,:])
+
+            for k = 1:N
+                
                 #println("res = $((f[t-1,k]))")
-                α[t,l] += (θ[k,l]) * f[t-1,k]
+                α[t,l] += (θ[k,l]) * (f[t-1,k])
             end
         end
     end
@@ -49,6 +58,9 @@ function forwardFiltering(Y, θ, μs, κs)
     for k = 1:N
         f[T,k] = filtering(Y, μs, κs, α, T, k)
     end
+    f[T,:] = exp.(f[T,:] .- maximum(f[T,:]))
+    f[T,:] = f[T,:] / sum(f[T,:])
+
     α, f
 end
 
