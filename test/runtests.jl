@@ -83,7 +83,6 @@ function hiddenMarkovModelTest()
     clusterModel = VonMisesFisherBayesianModel(VonMisesFisher(ones(D) / norm(ones(D)), 0.01), Gamma(1.0, 6.0))
     hmm = VonMisesFisherHiddenMarkovModel(clusterModel, 2, 1.0)
 
-
     θ, X, μs, κs = gibbsInference(hmm, Y, 1000)
 
     println("θ = $(θ)")
@@ -95,7 +94,7 @@ end
 
 # Generate data
 function genDataStateSpace(T)
-    NumSamples = 500
+    NumSamples = 200
     D = 3
     
     # Measurement Variance
@@ -137,14 +136,20 @@ function stateSpaceModelTest()
     
     #fs = rand(VonMisesFisher(states[20,rand(Categorical(weights[20,:])),:], 60))
     #sampledStates = backwardSampling(states, fs, 40)
-    sampledStates = smoothingSample(data, 1000, 40, 60)
+    #sampledStates = smoothingSample(data, 1000, 40, 60)
+    println(states)
+    model = VonMisesFisherStateSpaceModel(Gamma(1.0, 6.0), Gamma(1.0, 6.0))
+    S, M0, C0 = gibbsInference(model, data, 50)
 
+    println("Measurement κ: $(M0)")
+    println("Transition κ: $(C0)")
+    println("States: $(S)")
 end
 
 # @test_nowarn basicModelTest()
 # @test_nowarn mixtureTest()
-@test_nowarn mixturePredTest()
+# @test_nowarn mixturePredTest()
 # @test_nowarn hiddenMarkovModelTest()
-# @test_nowarn stateSpaceModelTest()
+@test_nowarn stateSpaceModelTest()
 
 end

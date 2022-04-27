@@ -7,18 +7,23 @@ export
     # Statistical Models
     VonMisesFisherBayesianModel,
     VonMisesFisherMixtureModel,
+
+    # Temporal Models
     VonMisesFisherHiddenMarkovModel,
     VonMisesFisherStateSpaceModel,
+
     # VonMisesFisherStateSpaceMixtureModel,
 
     # Returns values of the model parameters in an MCMC chain.
     gibbsInference,
 
     randIndex,
+    
     # These are to train and predict the cluster given a data point.
     predict,
     predictProba,
     fit,
+    
     # filterAux,
     # backwardSampling,
     smoothingSample

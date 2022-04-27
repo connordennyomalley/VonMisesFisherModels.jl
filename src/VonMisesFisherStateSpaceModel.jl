@@ -3,25 +3,31 @@ struct VonMisesFisherStateSpaceModel
     emissionPrior::ContinuousUnivariateDistribution
 end
 
-function gibbsInference(model::VonMisesFisherStateSpaceModel, Y::Array{Matrix}, niter::Int)
+function gibbsInference(model::VonMisesFisherStateSpaceModel, Y::Vector{Matrix{Float64}}, niter::Int)
     numParticles = 1000
-
+    
     ## Initial Samples
     # M0 = Emission concentration
     M0 = 40
 
     # Transition concentration
     C0 = 60
+
     
-    for i = 2:(iter + 1)
+    S = smoothingSample(Y, numParticles, M0, C0)
+
+    println("Beginning Gibbs Sampling...")
+    for i = 2:(niter + 1)
         # Sample path through states
-        S = smoothingSample(X, numParticles, M0, C0)
+        S = smoothingSample(Y, numParticles, M0, C0)
 
         # Sample parameters of transition distribution
-        C0 = transitionPrecisionGibbs(x, model.transitionPrior, niter)[end]
+        C0 = transitionPrecisionGibbs(S, model.transitionPrior, niter)[end]
 
         # Sample parameters of emission distribution
         M0 = gibbsEmissionκ(S, Y, model.emissionPrior)[end]
+
+        println("$(i-1)/$(niter) ✅")
     end
     
     (S, M0, C0)
@@ -35,7 +41,7 @@ function logpdfEmissionκ(X, Y, prior, κ)
     # Prob of seeing data under κ then times prior of κ
     v = 0.0
     for t = 1:length(Y)
-        v += logpdfX(Y[t], X[t], κ)
+        v += logpdfX(Y[t], X[:,t], κ)
     end
     v += logpdf(prior, κ)
 
@@ -43,9 +49,12 @@ function logpdfEmissionκ(X, Y, prior, κ)
 end
 
 function gibbsEmissionκ(X, Y, prior)
+    niter = 100
     κ = zeros(niter)
     κ[1] = 1.0
-    
+    # println("State size $(size(X))")
+    # println("Data size $(size(Y[1]))")
+
     for i = 2:niter
         κ[i] = sliceSample(v -> logpdfEmissionκ(X, Y, prior, v), 3, 3, 10, κ[i-1])[end]
     end
@@ -58,6 +67,10 @@ function logpdfX(X, μ, κ)
     
     val = 0
     for i = 1:N
+        # println(μ)
+        if norm(μ) != 1.0
+            μ = μ / norm(μ)
+        end
         val += logpdf(VonMisesFisher(μ,κ), X[:,i])
     end
     (val)
@@ -113,6 +126,9 @@ function filterAux(Y, numParticles, M0, C0)
         for i = 1:N
             # Auxiliary Indicator
             j = rand(Categorical(g))
+            if norm(α[t,:,j]) != 1.0
+                α[t,:,j] = α[t,:,j] / norm(α[t,:,j])
+            end
             α[t+1,:,i] = rand(VonMisesFisher(α[t,:,j], C0))
 
             w[t+1,i] = logpdfX(Y[t+1], α[t+1,:,i], M0) - logpdfX(Y[t+1], μ[:,j], M0)
@@ -153,6 +169,9 @@ function backwardSampling(X, filterSample, C0)
         for i = 1:N
             w[t,:] = zeros(N)
             for j = 1:N
+                if norm(X[t,:,i]) != 1.0
+                    X[t,:,i] = X[t,:,i] / norm(X[t,:,i])
+                end
                 w[t,j] = pdf(VonMisesFisher(X[t,:,i], C0), X[t+1,:,i])
             end
             w[t,:] = w[t,:] / sum(w[t,:])
@@ -182,9 +201,9 @@ function logPdfκ(κ, x, prior)
         return -Inf
     end
     
-    T = size(x)[1]
+    T = size(x)[2]
 
-    println(κ)
+    #println(κ)
     if κ < 0
         return 0
     end
@@ -192,7 +211,8 @@ function logPdfκ(κ, x, prior)
     v = 0
     for t = 2:T
         #v *= log(pdf(VonMisesFisher(x[t-1,:], κ),x[t,:]))
-        v += (vMFpdf2(x[t-1,:], κ, x[t,:]))
+        #v += (vMFpdf2(x[t-1,:], κ, x[t,:]))
+        v += logpdf(VonMisesFisher(x[:,t-1], κ), x[:,t])
         #logvMFpdfSingle(x[t-1,:], κ, x[t,:])
     end
 
