@@ -4,10 +4,53 @@
 
 Represents a basic VMF Mixture Model.
 """
-struct VonMisesFisherMixtureModel
+mutable struct VonMisesFisherMixtureModel
     clusterDist::VonMisesFisherBayesianModel
     K::Int
     β::Float64
+
+    # Trained values
+    μs::AbstractArray
+    κs::AbstractArray{Float64}
+    ϕ::AbstractArray
+
+    function VonMisesFisherMixtureModel(clusterDist::VonMisesFisherBayesianModel, K::Int, β::Float64)
+        new(clusterDist, K, β)
+    end
+end
+
+function fit(model::VonMisesFisherMixtureModel, data::AbstractArray)
+    # Returns z so model can be used for unsupervised learning.
+    z, model.μs, model.κs, model.ϕ = gibbsInference(model, data, 100)
+    z
+end
+
+function predict(model::VonMisesFisherMixtureModel, data::AbstractArray)
+    probs = predictProba(model, data)
+    
+    res = zeros(size(probs)[2])
+    for i = 1:size(probs)[2]
+        _, res[i] = findmax(probs[:,i])
+    end
+
+    res
+end
+
+function predictProba(model::VonMisesFisherMixtureModel, data::AbstractArray)
+    probs = zeros(model.K, size(data)[2])
+
+    for n = 1:size(data)[2]
+        # Construct probability vector over the clusters.
+        pvec = zeros(model.K)
+        for kᵢ = 1:model.K
+            pvec[kᵢ] = exp(log(model.ϕ[kᵢ]) + logpdf(VonMisesFisher(model.μs[:, kᵢ], model.κs[kᵢ]), data[:,n]))
+        end
+        pvec = pvec / sum(pvec)
+
+        probs[:,n] = pvec
+    end
+
+    probs
 end
 
 """
@@ -69,5 +112,5 @@ function gibbsInference(model::VonMisesFisherMixtureModel, X::Matrix, niter::Int
         end
     end
 
-    (z,μs,κs)
+    (z,μs,κs,ϕ)
 end

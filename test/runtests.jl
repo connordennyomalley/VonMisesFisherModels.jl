@@ -33,6 +33,19 @@ function mixtureTest()
     println("Mixture results 2: $(rμ[:,2]), $(rκ[2])")
 end
 
+function mixturePredTest()
+    mixdataμ = ([-1, 1, 1] / norm([-1, 1, 1]), [1, -1, -1] / norm([1, -1, -1]))
+	mixdataκ = (4.0, 8.0)
+	mixdata = (rand(VonMisesFisher(mixdataμ[1], mixdataκ[1]), 1000), rand(VonMisesFisher(mixdataμ[2], mixdataκ[2]), 1000))
+
+    clusterModel = VonMisesFisherBayesianModel(VonMisesFisher(ones(3) / norm(ones(3)), 0.01), Gamma(1.0,6.0))
+    mixtureModel = VonMisesFisherMixtureModel(clusterModel, 2, 1.0)
+    
+    VonMisesFisherModels.fit(mixtureModel, hcat(mixdata[1],mixdata[2]))
+    z = predict(mixtureModel, hcat(mixdata[1], mixdata[2]))
+    println("$(sum(z .== 1)), $(sum(z .== 2))")
+end
+
 function hiddenMarkovModelTest()
     # HMM Parameters
     T = 1000
@@ -126,9 +139,10 @@ function stateSpaceModelTest()
 
 end
 
-#@test_nowarn basicModelTest()
-#@test_nowarn mixtureTest()
-@test_nowarn hiddenMarkovModelTest()
-#@test_nowarn stateSpaceModelTest()
+# @test_nowarn basicModelTest()
+# @test_nowarn mixtureTest()
+@test_nowarn mixturePredTest()
+# @test_nowarn hiddenMarkovModelTest()
+# @test_nowarn stateSpaceModelTest()
 
 end
