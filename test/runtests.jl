@@ -44,6 +44,8 @@ function mixturePredTest()
     VonMisesFisherModels.fit(mixtureModel, hcat(mixdata[1],mixdata[2]))
     z = predict(mixtureModel, hcat(mixdata[1], mixdata[2]))
     println("$(sum(z .== 1)), $(sum(z .== 2))")
+    #println(size(z))
+    println("Rand index: $(randIndex(z, vcat(ones(1000), ones(1000)*2)))")
 end
 
 function hiddenMarkovModelTest()

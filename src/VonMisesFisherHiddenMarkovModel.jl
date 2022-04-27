@@ -1,8 +1,27 @@
-struct VonMisesFisherHiddenMarkovModel
+mutable struct VonMisesFisherHiddenMarkovModel
     clusterDist::VonMisesFisherBayesianModel
     K::Int
     β::Float64
+
+    # Fit and prediction parameters
+    μs
+    κs
+    θ
+
+    function VonMisesFisherHiddenMarkovModel(clusterDist::VonMisesFisherBayesianModel, K::Int, β::Float64)
+        new(clusterDist, K, β)
+    end
 end
+
+function fit(model::VonMisesFisherHiddenMarkovModel, data::AbstractArray)
+    # Return states for unsupervised learning.
+    model.θ, X, model.μs, model.κs = gibbsInference(model, data, 100)
+    X
+end
+
+#function predict(model::VonMisesFisherHiddenMarkovModel, data::AbstractArray)
+    
+#end
 
 function filtering(Y, μs, κs, α, t, l)
     N = size(μs)[2]
