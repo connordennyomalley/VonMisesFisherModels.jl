@@ -19,9 +19,52 @@ function fit(model::VonMisesFisherHiddenMarkovModel, data::AbstractArray)
     X
 end
 
-#function predict(model::VonMisesFisherHiddenMarkovModel, data::AbstractArray)
+function predict(model::VonMisesFisherHiddenMarkovModel, data::AbstractArray)
+    # data is a series of observations and we want to predict from which cluster they came.
+    # ignoring the transistion distributions.
+    probs = predictProba(model, data)
     
-#end
+    res = zeros(size(probs)[2])
+    for i = 1:size(probs)[2]
+        _, res[i] = findmax(probs[:,i])
+    end
+
+    res
+end
+
+function predictProba(model::VonMisesFisherHiddenMarkovModel, data::AbstractArray)
+    probs = zeros(model.K, size(data)[2])
+
+    for n = 1:size(data)[2]
+        # Construct probability vector over the clusters.
+        pvec = zeros(model.K)
+        for kᵢ = 1:model.K
+            pvec[kᵢ] = exp(logpdf(VonMisesFisher(model.μs[:, kᵢ], model.κs[kᵢ]), data[:,n]))
+        end
+        pvec = pvec / sum(pvec)
+
+        probs[:,n] = pvec
+    end
+
+    probs
+end
+
+function predictProba(model::VonMisesFisherHiddenMarkovModel, data::AbstractArray, currentCluster::Int)
+    probs = zeros(model.K, size(data)[2])
+
+    for n = 1:size(data)[2]
+        # Construct probability vector over the clusters.
+        pvec = zeros(model.K)
+        for kᵢ = 1:model.K
+            pvec[kᵢ] = exp(log(model.θ[currentCluster, kᵢ]) + logpdf(VonMisesFisher(model.μs[:, kᵢ], model.κs[kᵢ]), data[:,n]))
+        end
+        pvec = pvec / sum(pvec)
+
+        probs[:,n] = pvec
+    end
+
+    probs
+end
 
 function filtering(Y, μs, κs, α, t, l)
     N = size(μs)[2]

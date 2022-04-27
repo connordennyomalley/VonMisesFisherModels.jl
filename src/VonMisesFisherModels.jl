@@ -17,6 +17,7 @@ export
     randIndex,
     # These are to train and predict the cluster given a data point.
     predict,
+    predictProba,
     fit,
     # filterAux,
     # backwardSampling,
