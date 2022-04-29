@@ -26,8 +26,11 @@ export
     
     # filterAux,
     # backwardSampling,
-    smoothingSample
+
+    smoothingSample,
+    vMFRandWood
     
+include("RandomVonMisesFisher.jl")
 include("Metrics.jl")
 include("SliceSampler.jl")
 include("VonMisesFisherBayesianModel.jl")

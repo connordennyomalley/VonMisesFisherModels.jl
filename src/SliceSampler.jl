@@ -68,7 +68,7 @@ function shrinkageSample(f, x0, y, ω, L, R)
 		if y < f(x1) #&& accept(f, x0, x1, y, ω, L, R)
 			return x1
 		end
-		
+		#println("Proposing $(x1) but it has density $(f(x1))")
 		if x1 < x0
 			Lbar = x1
 		else

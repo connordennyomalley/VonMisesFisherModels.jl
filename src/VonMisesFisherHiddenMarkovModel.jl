@@ -15,8 +15,8 @@ end
 
 function fit(model::VonMisesFisherHiddenMarkovModel, data::AbstractArray)
     # Return states for unsupervised learning.
-    model.θ, X, model.μs, model.κs = gibbsInference(model, data, 100)
-    X
+    model.θ, S, model.μs, model.κs = gibbsInference(model, data, 100)
+    S
 end
 
 function predict(model::VonMisesFisherHiddenMarkovModel, data::AbstractArray)
@@ -67,23 +67,8 @@ function predictProba(model::VonMisesFisherHiddenMarkovModel, data::AbstractArra
 end
 
 function filtering(Y, μs, κs, α, t, l)
-    N = size(μs)[2]
-    
-    # emission = exp(logpdf(VonMisesFisher(μs[:,l], κs[l]), Y[:,t]))
     emission = logvMFpdf(μs[:,l], κs[l], Y[t])
 
-   # divisor_sum = zeros(N)
-    #for k = 1:N
-        ##divisor += exp(logprobs[k] - maxLogProb)
-        #val = logvMFpdf(μs[:,k], κs[k], Y[t])
-        #println("Value $(val)")
-        ##divisor += exp(val) * α[t,k]
-        #divisor_sum[k] = ((val) + log(α[t,k]))
-    #end
-    #divisor = exp(divisor .- maximum)
-
-    #divisor = maxLogProb + log(divisor)
-    #println("Divisor: $(divisor)")
     ((emission) + log(α[t,l]))
 end
 
@@ -91,6 +76,7 @@ function forwardFiltering(Y, θ, μs, κs)
     T = size(Y)[1]
     N = size(μs)[2]
     
+    # α is the one step ahead density.
     α = zeros(T,N)
     for l = 1:N
         for k = 1:N
@@ -126,20 +112,20 @@ function forwardFiltering(Y, θ, μs, κs)
     α, f
 end
 
-function forwardFilteringBackwardSampling(Y, θ, μs, κs)
-    T = size(Y)[1]
-    N = size(μs)[2]
+function forwardFilteringBackwardSampling(X, θ, μs, κs)
+    T = size(X)[1]
+    K = size(μs)[2]
 
-    _, f = forwardFiltering(Y, θ, μs, κs)
+    _, f = forwardFiltering(X, θ, μs, κs)
 
     S = zeros(Int64, T)
     S[T] = rand(Categorical(f[T,:]))
 
     for t = T-1:-1:1
-        pS = zeros(N)
-        for j = 1:N
+        pS = zeros(K)
+        for j = 1:K
             divisor = 0
-            for k = 1:N
+            for k = 1:K
                 divisor += θ[k,S[t+1]] * f[t,k]
             end
             
@@ -153,14 +139,14 @@ function forwardFilteringBackwardSampling(Y, θ, μs, κs)
 end
 
 """
-    countTransitions(X, i, j)
+    countTransitions(S, i, j)
 
 Returns given a path through states how many transitions there are from state i to state j.
 """
-function countTransistions(X, i, j)
+function countTransistions(S, i, j)
     c = 0
-    for k = 1:length(X)-1
-        if X[k] == i && X[k+1] == j
+    for k = 1:length(S)-1
+        if S[k] == i && S[k+1] == j
             c += 1
         end
     end
@@ -171,30 +157,30 @@ function gibbsInference(model::VonMisesFisherHiddenMarkovModel, Y, niter)
     D = size(Y[1])[1]
     T = size(Y)[1]
     β = model.β
-    N = model.K
+    K = model.K
 
     # Transition probability matrix.
     # θ[i,j] = P(xⱼ | xᵢ)
-    θ = (ones(N)/N)'
-    for i = 2:N
-        θ = vcat(θ, (ones(N)/N)')
+    θ = (ones(K)/K)'
+    for i = 2:K
+        θ = vcat(θ, (ones(K)/K)')
     end
 
     # States.
-    X = zeros(Int64, T)
-    X[1] = rand(Categorical(ones(N)/N))
+    S = zeros(Int64, T)
+    S[1] = rand(Categorical(ones(K)/K))
     for t = 2:T
         #println("t = $(t)")
-        X[t] = rand(Categorical(θ[X[t-1],:]))
+        S[t] = rand(Categorical(θ[S[t-1],:]))
         #X[t] = rand(Categorical(ones(N)/N))
     end
     
     # Emission Parameters
     # μs[:,n] = nth emission mean direction vector
-    μs = zeros(D,N)
-    κs = zeros(N)
-    for n = 1:N
-        Yₙ = reduce(hcat, Y[X .== n])
+    μs = zeros(D,K)
+    κs = zeros(K)
+    for n = 1:K
+        Yₙ = reduce(hcat, Y[S .== n])
         μs[:,n], κs[n] = gibbsInference(model.clusterDist, Yₙ, 10)[end]
     end
 
@@ -205,10 +191,10 @@ function gibbsInference(model::VonMisesFisherHiddenMarkovModel, Y, niter)
         #println("\nStarting iteration $(i)")
         
         # Sample θ
-        for j = 1:N
-            param = zeros(N)
-            for k = 1:N
-                param[k] = β + countTransistions(X,j,k)
+        for j = 1:K
+            param = zeros(K)
+            for k = 1:K
+                param[k] = β + countTransistions(S,j,k)
                 #param[k] = β + sum(X .== k)
                 #param[k] = β + size(X)[1]/N
             end
@@ -218,12 +204,12 @@ function gibbsInference(model::VonMisesFisherHiddenMarkovModel, Y, niter)
         # Sample X
         #println("Starting forward backward algorithm")
         # Needs to be forward filtering backward sampling.
-        X = forwardFilteringBackwardSampling(Y, θ, μs, κs)
+        S = forwardFilteringBackwardSampling(Y, θ, μs, κs)
         
         # Sample emission parameters
         #println("Starting emission parameter sampling")
-        for n = 1:N
-            Yₖ = reduce(hcat, Y[X .== n])
+        for n = 1:K
+            Yₖ = reduce(hcat, Y[S .== n])
             
             if size(Yₖ)[2] > 1
                 # (sum(Xₖ, dims=2)[:,1] / size(Xₖ)[2], MLEκ(Xₖ))
@@ -238,5 +224,5 @@ function gibbsInference(model::VonMisesFisherHiddenMarkovModel, Y, niter)
         end
     end
 
-    (θ, X, μs, κs)
+    (θ, S, μs, κs)
 end

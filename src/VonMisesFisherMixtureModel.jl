@@ -1,6 +1,6 @@
 
 """
-    VonMisesFisherMixtureModel
+    VonMisesFisherMixtureModel(clusterDist::VonMisesFisherBayesianModel, K::Int, β::Float64)
 
 Represents a basic VMF Mixture Model.
 """
@@ -58,7 +58,7 @@ end
 
 Generates an MCMC Chain of parameter sampled values.
 """
-function gibbsInference(model::VonMisesFisherMixtureModel, X::Matrix, niter::Int)
+function gibbsInference(model::VonMisesFisherMixtureModel, X::Matrix, niter::Int, clusterNIter::Int=5)
     D = size(X)[1]
     N = size(X)[2]
     β = model.β
@@ -71,13 +71,16 @@ function gibbsInference(model::VonMisesFisherMixtureModel, X::Matrix, niter::Int
     # Parameters for each cluster.
     κs = Array{Float64}(undef, K)
     μs = Array{Float64}(undef, D, K)
+    println("Starting gibbs for initial clusters...")
     for kᵢ = 1:K
         Xₖ = X[:,z .== kᵢ]
-        μs[:,kᵢ], κs[kᵢ] = gibbsInference(model.clusterDist, Xₖ, 100)[end]
+        μs[:,kᵢ], κs[kᵢ] = gibbsInference(model.clusterDist, Xₖ, clusterNIter)[end]
     end
+    println("Done.")
 
     for i = 1:niter
 
+        #println("Here!")
         # Sample phi
         param = zeros(length(ϕ))
         for j = 1:length(ϕ)
@@ -85,6 +88,7 @@ function gibbsInference(model::VonMisesFisherMixtureModel, X::Matrix, niter::Int
         end
         ϕ = rand(Dirichlet(param))
 
+        #println("Here 2!")
         # Sample z
         for j = 1:N
             xᵢ = X[:, j]
@@ -92,24 +96,29 @@ function gibbsInference(model::VonMisesFisherMixtureModel, X::Matrix, niter::Int
             # Construct probability vector over the clusters.
             pvec = zeros(K)
             for kᵢ = 1:K
-                pvec[kᵢ] = exp(log(ϕ[kᵢ]) + logpdf(VonMisesFisher(μs[:, kᵢ], κs[kᵢ]), vec(xᵢ)))
-            end
+                pvec[kᵢ] = (log(ϕ[kᵢ]) + logvMFpdfSum(μs[:, kᵢ], κs[kᵢ], vec(xᵢ), 1))#logpdf(VonMisesFisher(μs[:, kᵢ], κs[kᵢ]), vec(xᵢ))
+            end #TODO: NORMALIZE! ✓
+            pvec = exp.(pvec .- maximum(pvec))
             pvec = pvec / sum(pvec)
 
             z[j] = rand(Categorical(pvec))
         end
 
+        
+        #println("Here 3!")
         # Sample parameters for each cluster k
         for kᵢ = 1:K
             Xₖ = X[:, z.==kᵢ]
             if size(Xₖ)[2] > 0
                 # Alternative MLE method
-                # (sum(Xₖ, dims=2)[:,1] / size(Xₖ)[2], MLEκ(Xₖ))
-                μs[:, kᵢ], κs[kᵢ] = gibbsInference(model.clusterDist, Xₖ, 100)[end]
+                # μs[:, kᵢ], κs[kᵢ] = (sum(Xₖ, dims=2)[:,1] / size(Xₖ)[2], MLEκ(Xₖ))
+
+                μs[:, kᵢ], κs[kᵢ] = gibbsInference(model.clusterDist, Xₖ, clusterNIter)[end]
             else
                 # Leave the same as old value for cluster parameters
             end
         end
+        println("$(i) ✓")
     end
 
     (z,μs,κs,ϕ)

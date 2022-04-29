@@ -1,10 +1,28 @@
+
+function logbesseliApprox(ν, a)
+    sqrt(a^2 + (ν + 1)^2) + (ν + 0.5) * log(a / (ν + 0.5 + sqrt(a^2 + (ν + 1)^2))) - 0.5 * log(a/2) + (ν + 0.5) * log((2 * ν + 3/2)/(2* (ν + 1))) - 0.5 * log(2 * π)
+end
+
 """
     logC(κ, D)
 
 Log of the constant in the Von Mises-Fisher distribution.
 """
 function logC(κ, D)
-    log((2 * π)^(-D/2)) + log(κ^((D/2)-1)) - (log(besselix(((D/2)-1), κ)) + κ)
+    # println("kappa: $(κ), D: $(D)")
+    # println("V3: $((-D/2) * log((2 * π)) + ((D/2)-1) * log(κ))")
+    # println("V4: $((log(besselix(((D/2)-1), κ)) + κ))")
+    # (log(besselix(((D/2)-1), κ)) + κ)
+    (-D/2) * log((2 * π)) + ((D/2)-1) * log(κ) - logbesseliApprox(((D/2)-1), κ)
+end
+
+function logvMFpdfSum(μ, κ, sumX, N)
+    D = size(sumX)[1]
+    
+    # println("V1: $(logC(κ[1], D))")
+    # println("V2: $(κ[1] .* (μ' * sumX))")
+
+    N * logC(κ[1], D) + κ[1] .* (μ' * sumX)
 end
 
 """
@@ -24,19 +42,18 @@ end
 
 Sample from the posterior of μ for a basic Von Mises-Fisher Bayesian model.
 """
-function samplePosteriorμ(μ, κ, X, priorDist::VonMisesFisher)
+function samplePosteriorμ(κ, sumX, priorDist::VonMisesFisher)
     μ0 = priorDist.μ
     κ0 = priorDist.κ
-    #  println("")
-    #println(size(X))
-    #println(κ0)
-    #println(μ0)
-    #println(size(κ0 .* μ0))
-    #println(size(κ .* sum(X, dims=2)))
-    νX = κ0 .* μ0 + κ .* sum(X, dims=2)[:,1]
+
+    νX = κ0 .* μ0 + κ .* sumX
     νXNorm = norm(νX)
-    #println("$(νX)")
-    rand(VonMisesFisher(νX / νXNorm, νXNorm))
+    
+    # println(νXNorm)
+    # println(size(νX))
+
+    vMFRandWood(νX / νXNorm, νXNorm)
+    #rand(VonMisesFisher(νX / νXNorm, νXNorm))
 end
 
 """
@@ -44,17 +61,22 @@ end
 
 Posterior density of κ for a basic Von Mises-Fisher Bayesian model.
 """
-function posteriorDensityκ(μ, κ, X, priorDist)
+function posteriorDensityκ(μ, κ, sumX, N, priorDist)
     if κ < 0
         return 0
     end
 
-    loglikelihood = logvMFpdf(μ, κ, X)
-    loglikelihood + logpdf(priorDist, κ)
+    # println(κ) # 33
+    #println(N) # 1001
+
+    loglikelihood = logvMFpdfSum(μ, κ, sumX, N)
+    res = loglikelihood + logpdf(priorDist, κ)
+
+    res
 end
 
-function samplePosteriorκ(μ, κ, X, priorDist)
-    sliceSample(j -> posteriorDensityκ(μ, j, X, priorDist), 3, 3, 10, κ)[end]
+function samplePosteriorκ(μ, κ, sumX, N, priorDist)
+    sliceSample(j -> posteriorDensityκ(μ, j, sumX, N, priorDist), 3, 3, 10, κ)[end]
 end
 
 function MLEκ(X)
@@ -72,8 +94,11 @@ function gibbsInference(model::VonMisesFisherBayesianModel, X::Matrix, niter::In
     # Markov Chain of samples.
     res = Array{Tuple{Vector{Float64},Float64}}(undef, niter + 1)
 
+    # Save recomputing this value
+    sumX = sum(X, dims=2)[:,1]
+
     # Initial Parameter Estimate to start the Markov Chain.
-    μ = sum(X, dims=2)[:,1] / size(X)[2]
+    μ = sumX / size(X)[2]
     κ = MLEκ(X)
 
     res[1] = (μ, κ)
@@ -82,10 +107,16 @@ function gibbsInference(model::VonMisesFisherBayesianModel, X::Matrix, niter::In
         μPrevious = res[i-1][1]
         κPrevious = res[i-1][2]
 
-        μSample = samplePosteriorμ(μPrevious, κPrevious, X, model.μPrior)
-        κSample = samplePosteriorκ(μSample, κPrevious, X, model.κPrior)
+        #println("Sampling μ")
+        μSample = samplePosteriorμ(κPrevious, sumX, model.μPrior)
+
+        #println("Sampling κ")
+        #println(μSample)
+        #println(κPrevious)
+        κSample = samplePosteriorκ(μSample, κPrevious, sumX, size(X)[2], model.κPrior)
 
         res[i] = (μSample, κSample)
+        #println(i)
     end
 
     res[2:end]

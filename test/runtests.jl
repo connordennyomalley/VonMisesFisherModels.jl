@@ -20,15 +20,20 @@ function basicModelTest()
 	println("Basic Bayesian results: $(resμ ./ length(res)), $(resκ / length(res))")
 end
 
-function mixtureTest()
-    mixdataμ = ([-1, 1, 1] / norm([-1, 1, 1]), [1, -1, -1] / norm([1, -1, -1]))
+function mixtureTest()# TODO: CHECK THIS WORKS!
+    mixdataμ = (ones(20000), ones(20000))
+    mixdataμ[1][1] = -1
+    mixdataμ[2][2] = -1
+    mixdataμ = (mixdataμ[1] / norm(mixdataμ[1]), mixdataμ[2] / norm(mixdataμ[2]))
 	mixdataκ = (4.0, 8.0)
 	mixdata = (rand(VonMisesFisher(mixdataμ[1], mixdataκ[1]), 1000), rand(VonMisesFisher(mixdataμ[2], mixdataκ[2]), 1000))
 
     clusterModel = VonMisesFisherBayesianModel(VonMisesFisher(ones(size(mixdata[1])[1]) / norm(ones(size(mixdata[1])[1])), 0.01), Gamma(1.0,6.0))
     mixtureModel = VonMisesFisherMixtureModel(clusterModel, 2, 1.0)
- 
-    rz, rμ, rκ = gibbsInference(mixtureModel, hcat(mixdata[1], mixdata[2]), 1000)
+    
+    rz, rμ, rκ = gibbsInference(mixtureModel, hcat(mixdata[1], mixdata[2]), 50)
+    println("True 1 mean and kappa: $(mixdataμ[1]), $(mixdataκ[1])")
+    println("True 2 mean and kappa: $(mixdataμ[2]), $(mixdataκ[2])")
     println("Mixture results 1: $(rμ[:,1]), $(rκ[1])")
     println("Mixture results 2: $(rμ[:,2]), $(rκ[2])")
 end
@@ -147,9 +152,9 @@ function stateSpaceModelTest()
 end
 
 # @test_nowarn basicModelTest()
-# @test_nowarn mixtureTest()
+@test_nowarn mixtureTest()
 # @test_nowarn mixturePredTest()
 # @test_nowarn hiddenMarkovModelTest()
-@test_nowarn stateSpaceModelTest()
+# @test_nowarn stateSpaceModelTest()
 
 end
