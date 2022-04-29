@@ -30,7 +30,7 @@ function mixtureTest()# TODO: CHECK THIS WORKS!
 
     clusterModel = VonMisesFisherBayesianModel(VonMisesFisher(ones(size(mixdata[1])[1]) / norm(ones(size(mixdata[1])[1])), 0.01), Gamma(1.0,6.0))
     mixtureModel = VonMisesFisherMixtureModel(clusterModel, 2, 1.0)
-    
+
     rz, rμ, rκ = gibbsInference(mixtureModel, hcat(mixdata[1], mixdata[2]), 50)
     println("True 1 mean and kappa: $(mixdataμ[1]), $(mixdataκ[1])")
     println("True 2 mean and kappa: $(mixdataμ[2]), $(mixdataκ[2])")

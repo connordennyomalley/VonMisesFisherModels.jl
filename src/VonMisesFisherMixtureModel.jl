@@ -71,12 +71,12 @@ function gibbsInference(model::VonMisesFisherMixtureModel, X::Matrix, niter::Int
     # Parameters for each cluster.
     κs = Array{Float64}(undef, K)
     μs = Array{Float64}(undef, D, K)
-    println("Starting gibbs for initial clusters...")
+    #println("Starting gibbs for initial clusters...")
     for kᵢ = 1:K
         Xₖ = X[:,z .== kᵢ]
         μs[:,kᵢ], κs[kᵢ] = gibbsInference(model.clusterDist, Xₖ, clusterNIter)[end]
     end
-    println("Done.")
+    #println("Done.")
 
     for i = 1:niter
 
@@ -118,7 +118,7 @@ function gibbsInference(model::VonMisesFisherMixtureModel, X::Matrix, niter::Int
                 # Leave the same as old value for cluster parameters
             end
         end
-        println("$(i) ✓")
+        #println("$(i) ✓")
     end
 
     (z,μs,κs,ϕ)
