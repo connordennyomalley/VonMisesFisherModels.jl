@@ -4,6 +4,8 @@ struct VonMisesFisherStateSpaceModel
 end
 
 function gibbsInference(model::VonMisesFisherStateSpaceModel, Y::Vector{Matrix{Float64}}, niter::Int)
+    checkInputTemporal(Y)
+
     numParticles = 1000
     
     ## Initial Samples
@@ -16,7 +18,7 @@ function gibbsInference(model::VonMisesFisherStateSpaceModel, Y::Vector{Matrix{F
     
     S = smoothingSample(Y, numParticles, M0, C0)
 
-    println("Beginning Gibbs Sampling...")
+    #println("Beginning Gibbs Sampling...")
     for i = 2:(niter + 1)
         # Sample path through states
         S = smoothingSample(Y, numParticles, M0, C0)
@@ -27,7 +29,7 @@ function gibbsInference(model::VonMisesFisherStateSpaceModel, Y::Vector{Matrix{F
         # Sample parameters of emission distribution
         M0 = gibbsEmissionκ(S, Y, model.emissionPrior)[end]
 
-        println("$(i-1)/$(niter) ✅")
+        #println("$(i-1)/$(niter) ✅")
     end
     
     (S, M0, C0)
@@ -184,6 +186,8 @@ function backwardSampling(X, filterSample, C0)
 end
 
 function smoothingSample(Y, numParticles, M0, C0)
+    checkInputTemporal(Y)
+
     T = size(Y)[1]
     
     # Particle Filtering

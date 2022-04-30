@@ -59,6 +59,8 @@ end
 Generates an MCMC Chain of parameter sampled values.
 """
 function gibbsInference(model::VonMisesFisherMixtureModel, X::Matrix, niter::Int, clusterNIter::Int=5)
+    checkInputMixture(X)
+
     D = size(X)[1]
     N = size(X)[2]
     β = model.β
@@ -122,4 +124,20 @@ function gibbsInference(model::VonMisesFisherMixtureModel, X::Matrix, niter::Int
     end
 
     (z,μs,κs,ϕ)
+end
+
+function checkInputMixture(X)
+
+    # Check data points are not nan
+    if sum(isnan.(X)) != 0
+        throw(error("Data contains NaN values."))
+    end
+
+    # Check data points are normal.
+    # for i = 1:size(X)[2]
+    #     if norm(X[:,i]) != 1.0
+    #         throw(error("Data contains non-normalized vectors. Vectors must have norm of 1."))
+    #     end
+    # end
+
 end

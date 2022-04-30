@@ -154,6 +154,8 @@ function countTransistions(S, i, j)
 end
 
 function gibbsInference(model::VonMisesFisherHiddenMarkovModel, Y, niter)
+    checkInputTemporal(Y)
+
     D = size(Y[1])[1]
     T = size(Y)[1]
     β = model.β
@@ -225,4 +227,10 @@ function gibbsInference(model::VonMisesFisherHiddenMarkovModel, Y, niter)
     end
 
     (θ, S, μs, κs)
+end
+
+function checkInputTemporal(Y)
+    for X = Y
+        checkInputMixture(X)
+    end
 end
