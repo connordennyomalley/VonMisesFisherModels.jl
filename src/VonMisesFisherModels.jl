@@ -4,32 +4,32 @@ using Distributions, Random, StatsBase, LinearAlgebra
 import SpecialFunctions: besselix
 
 export
-    # Statistical Models
+    ## Statistical Models
     VonMisesFisherBayesianModel,
     VonMisesFisherMixtureModel,
 
-    # Temporal Models
+    ## Temporal Models
     VonMisesFisherHiddenMarkovModel,
     VonMisesFisherStateSpaceModel,
-
     # VonMisesFisherStateSpaceMixtureModel,
 
-    # Returns values of the model parameters in an MCMC chain.
-    gibbsInference,
-
+    ## Metrics
     randIndex,
     
-    # These are to train and predict the cluster given a data point.
+    ## Training and Prediction
     predict,
     predictProba,
     fit,
-    
+    gibbsInference,
     # filterAux,
     # backwardSampling,
-
     smoothingSample,
-    vMFRandWood
+
+    ## Utility functions
+    vMFRandWood,
+    tfidf
     
+include("TfIdf.jl")
 include("RandomVonMisesFisher.jl")
 include("Metrics.jl")
 include("SliceSampler.jl")

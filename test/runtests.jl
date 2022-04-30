@@ -151,10 +151,20 @@ function stateSpaceModelTest()
     println("States: $(S)")
 end
 
+function tfidfTest()
+    #corpus = ["This is the first document.", "This document is the second document.", "And this is the third one.", "Is this the first document?"]
+    #res = [0.0 0.0 0.51184851 0.0; 0.46979139 0.6876236 0.0 0.46979139; 0.58028582 0.0 0.0 0.58028582; 0.38408524 0.28108867 0.26710379 0.38408524; 0.0 0.0 0.51184851 0.0; 0.0 0.53864762 0.0 0.0; 0.38408524 0.28108867 0.26710379 0.38408524; 0.0 0.0 0.51184851 0.0; 0.38408524 0.28108867 0.26710379 0.38408524]
+    
+    corpus = ["This is a a sample", "This is another another example example example"]
+    tfidf(corpus)
+end
+
 # @test_nowarn basicModelTest()
-@test_nowarn mixtureTest()
+# @test_nowarn mixtureTest()
 # @test_nowarn mixturePredTest()
 # @test_nowarn hiddenMarkovModelTest()
 # @test_nowarn stateSpaceModelTest()
+@test_nowarn tfidfTest()
+
 
 end
