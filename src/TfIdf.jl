@@ -4,7 +4,7 @@ function tfidf(corpus)
     D = []
     for doc = corpus
         d = []
-        for m = eachmatch(r"[a-zA-Z]+", doc)
+        for m = eachmatch(r"\b(\w+)\b", doc)
             push!(d, lowercase(m.match))
         end
         push!(D, d)
