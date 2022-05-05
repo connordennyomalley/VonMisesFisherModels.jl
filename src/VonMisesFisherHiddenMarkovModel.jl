@@ -58,7 +58,7 @@ function predictProba(model::VonMisesFisherHiddenMarkovModel, data::AbstractArra
         for kᵢ = 1:model.K
             pvec[kᵢ] = exp(log(model.θ[currentCluster, kᵢ]) + logpdf(VonMisesFisher(model.μs[:, kᵢ], model.κs[kᵢ]), data[:,n]))
         end
-        pvec = pvec / sum(pvec)
+        pvec = pvec / norm(pvec)
 
         probs[:,n] = pvec
     end

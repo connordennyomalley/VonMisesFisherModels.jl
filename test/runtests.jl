@@ -12,7 +12,7 @@ function basicModelTest()
 
     model = VonMisesFisherBayesianModel(VonMisesFisher(ones(size(data)[1]) / norm(ones(size(data)[1])), 0.01), Gamma(1.0,6.0))
     res = gibbsInference(model, data, 1000)
-	resμ, resκ = res[1]
+	resμ, resκ = res[end]
 	for i = 2:length(res)
 		resμ = resμ + res[i][1]
 		resκ = resκ + res[i][2]
@@ -79,10 +79,14 @@ function hiddenMarkovModelTest()
     Y = Array{Matrix{Float64}}(undef, T)
     X = zeros(Int64, T)
     X[1] = 1
-    Y[1] = rand(VonMisesFisher(μs[:, 1], κs[1]), 10)
+    # Y[1] = rand(VonMisesFisher(μs[:, 1], κs[1]), 10)
+    Y[1] = Matrix{Float64}(undef, 3, 1)
+    Y[1][:,1] = rand(VonMisesFisher(μs[:, 1], κs[1]))
     for t = 2:T
         X[t] = rand(Categorical(θ[X[t-1], :]))
-        Y[t] = rand(VonMisesFisher(μs[:, X[t]], κs[X[t]]), 10)
+        Y[t] = Matrix{Float64}(undef, 3, 1)
+        Y[t][:,1] = rand(VonMisesFisher(μs[:, X[t]], κs[X[t]]))
+        #  , 10
     end
 
     clusterModel = VonMisesFisherBayesianModel(VonMisesFisher(ones(D) / norm(ones(D)), 0.01), Gamma(1.0, 6.0))
@@ -99,7 +103,7 @@ end
 
 # Generate data
 function genDataStateSpace(T)
-    NumSamples = 200
+    NumSamples = 4
     D = 3
     
     # Measurement Variance
@@ -134,7 +138,7 @@ function genDataStateSpace(T)
 end
 
 function stateSpaceModelTest()
-    data, states = genDataStateSpace(20)
+    data, states = genDataStateSpace(10)
 
     # Filtering
     # states, weights = filterAux(data, 5000, 40, 60)
@@ -159,12 +163,12 @@ function tfidfTest()
     tfidf(corpus)
 end
 
-@test_nowarn basicModelTest()
-@test_nowarn mixtureTest()
-@test_nowarn mixturePredTest()
-@test_nowarn hiddenMarkovModelTest()
+# @test_nowarn mixtureTest()
+# @test_nowarn basicModelTest()
+# @test_nowarn mixturePredTest()
+# @test_nowarn hiddenMarkovModelTest()
 @test_nowarn stateSpaceModelTest()
-@test_nowarn tfidfTest()
+# @test_nowarn tfidfTest()
 
 
 end

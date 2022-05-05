@@ -1,5 +1,5 @@
 
-function tfidf(corpus)
+function tfidf(corpus; minDf::Float64=0.0, maxDf::Float64=1.0)
     ## Clean data
     D = []
     for doc = corpus
@@ -25,6 +25,27 @@ function tfidf(corpus)
             end
         end
     end
+
+    
+    ## Filter terms that appear in high percentage of documents
+    # Find all terms that need removing
+    toRemove = []
+    for w = keys(documentCounts)
+        docProportion = documentCounts[w]/length(D)
+        if docProportion > maxDf || docProportion < minDf
+            push!(toRemove, w)
+        end
+    end
+
+    # Convert to set for quick lookup
+    toRemove = Set(toRemove)
+
+    # Remove from dicts
+    for dcm = docCountMaps
+        filter!(p -> p.first in toRemove, dcm)
+    end
+    filter!(p -> p.first in toRemove, documentCounts)
+
 
     ## Map each document to vector
 

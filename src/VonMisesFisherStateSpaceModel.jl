@@ -64,8 +64,8 @@ function gibbsEmissionκ(X, Y, prior)
 end
 
 function logpdfX(X, μ, κ)
-    N = size(X)[1]
-    D = size(X)[2]
+    D = size(X)[1]
+    N = size(X)[2]
     
     val = 0
     for i = 1:N
