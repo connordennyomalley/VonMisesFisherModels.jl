@@ -13,9 +13,9 @@ mutable struct VonMisesFisherHiddenMarkovModel
     end
 end
 
-function fit(model::VonMisesFisherHiddenMarkovModel, data::AbstractArray)
+function fit(model::VonMisesFisherHiddenMarkovModel, data::AbstractArray; numSamples::Int=100)
     # Return states for unsupervised learning.
-    model.θ, S, model.μs, model.κs = gibbsInference(model, data, 100)
+    model.θ, S, model.μs, model.κs = gibbsInference(model, data, numSamples)
     S
 end
 

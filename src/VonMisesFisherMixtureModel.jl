@@ -19,7 +19,7 @@ mutable struct VonMisesFisherMixtureModel
     end
 end
 
-function fit(model::VonMisesFisherMixtureModel, data::AbstractArray)
+function fit(model::VonMisesFisherMixtureModel, data::AbstractArray; numSamples::Int=100)
     # Returns z so model can be used for unsupervised learning.
     z, model.μs, model.κs, model.ϕ = gibbsInference(model, data, 100)
     z
