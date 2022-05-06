@@ -3,10 +3,8 @@ struct VonMisesFisherStateSpaceModel
     emissionPrior::ContinuousUnivariateDistribution
 end
 
-function gibbsInference(model::VonMisesFisherStateSpaceModel, Y::Vector{Matrix{Float64}}, niter::Int)
+function gibbsInference(model::VonMisesFisherStateSpaceModel, Y::Vector{Matrix{Float64}}, niter::Int; numParticles::Int=1000)
     checkInputTemporal(Y)
-
-    numParticles = 1000
     
     ## Initial Samples
     # M0 = Emission concentration

@@ -103,7 +103,7 @@ end
 
 # Generate data
 function genDataStateSpace(T)
-    NumSamples = 4
+    NumSamples = 3
     D = 3
     
     # Measurement Variance
@@ -138,7 +138,7 @@ function genDataStateSpace(T)
 end
 
 function stateSpaceModelTest()
-    data, states = genDataStateSpace(10)
+    data, states = genDataStateSpace(1000)
 
     # Filtering
     # states, weights = filterAux(data, 5000, 40, 60)
@@ -148,7 +148,7 @@ function stateSpaceModelTest()
     #sampledStates = smoothingSample(data, 1000, 40, 60)
     println(states)
     model = VonMisesFisherStateSpaceModel(Gamma(1.0, 6.0), Gamma(1.0, 6.0))
-    S, M0, C0 = gibbsInference(model, data, 50)
+    S, M0, C0 = gibbsInference(model, data, 50; numParticles=40)
 
     println("Measurement κ: $(M0)")
     println("Transition κ: $(C0)")
