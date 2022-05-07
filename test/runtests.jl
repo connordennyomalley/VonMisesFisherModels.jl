@@ -145,7 +145,7 @@ function stateSpaceModelTest()
     
     #fs = rand(VonMisesFisher(states[20,rand(Categorical(weights[20,:])),:], 60))
     #sampledStates = backwardSampling(states, fs, 40)
-    #sampledStates = smoothingSample(data, 1000, 40, 60)
+    #sampledStates = forwardFilteringBackwardSampling(data, 1000, 40, 60)
     println(states)
     model = VonMisesFisherStateSpaceModel(Gamma(1.0, 6.0), Gamma(1.0, 6.0))
     S, M0, C0 = gibbsInference(model, data, 50; numParticles=40)

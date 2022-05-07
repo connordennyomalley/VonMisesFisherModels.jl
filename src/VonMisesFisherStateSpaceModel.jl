@@ -14,12 +14,12 @@ function gibbsInference(model::VonMisesFisherStateSpaceModel, Y::Vector{Matrix{F
     C0 = 60
 
     
-    S = smoothingSample(Y, numParticles, M0, C0)
+    S = forwardFilteringBackwardSampling(Y, numParticles, M0, C0)
 
     #println("Beginning Gibbs Sampling...")
     for i = 2:(niter + 1)
         # Sample path through states
-        S = smoothingSample(Y, numParticles, M0, C0)
+        S = forwardFilteringBackwardSampling(Y, numParticles, M0, C0)
 
         # Sample parameters of transition distribution
         C0 = transitionPrecisionGibbs(S, model.transitionPrior, niter)[end]
@@ -183,7 +183,7 @@ function backwardSampling(X, filterSample, C0)
     sX
 end
 
-function smoothingSample(Y, numParticles, M0, C0)
+function forwardFilteringBackwardSampling(Y, numParticles, M0, C0)
     checkInputTemporal(Y)
 
     T = size(Y)[1]

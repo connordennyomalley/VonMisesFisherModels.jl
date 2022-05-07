@@ -23,7 +23,7 @@ export
     gibbsInference,
     # filterAux,
     # backwardSampling,
-    smoothingSample,
+    forwardFilteringBackwardSampling,
 
     ## Utility functions
     vMFRandWood,
