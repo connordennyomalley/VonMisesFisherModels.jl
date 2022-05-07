@@ -95,7 +95,7 @@ function gibbsInference(model::VonMisesFisherBayesianModel, X::Matrix, niter::In
     res = Array{Tuple{Vector{Float64},Float64}}(undef, niter + 1)
 
     # Save recomputing this value
-    sumX = sum(X, dims=2)[:,2]
+    sumX = sum(X, dims=2)[:,1]
 
     # Initial Parameter Estimate to start the Markov Chain.
     μ = sumX / size(X)[2]
