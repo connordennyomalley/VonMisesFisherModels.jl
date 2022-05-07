@@ -166,9 +166,9 @@ end
 @test_nowarn mixtureTest()
 @test_nowarn basicModelTest()
 @test_nowarn mixturePredTest()
-@test_nowarn hiddenMarkovModelTest()
-@test_nowarn stateSpaceModelTest()
-@test_nowarn tfidfTest()
+#@test_nowarn hiddenMarkovModelTest()
+# @test_nowarn stateSpaceModelTest()
+# @test_nowarn tfidfTest()
 
 
 end
