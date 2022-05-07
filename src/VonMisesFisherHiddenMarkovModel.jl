@@ -112,7 +112,7 @@ function forwardFiltering(Y, θ, μs, κs)
     α, f
 end
 
-function forwardFilteringBackwardSampling(X, θ, μs, κs)
+function forwardFilteringBackwardSamplingHMM(X, θ, μs, κs)
     T = size(X)[1]
     K = size(μs)[2]
 
@@ -206,7 +206,7 @@ function gibbsInference(model::VonMisesFisherHiddenMarkovModel, Y, niter)
         # Sample X
         #println("Starting forward backward algorithm")
         # Needs to be forward filtering backward sampling.
-        S = forwardFilteringBackwardSampling(Y, θ, μs, κs)
+        S = forwardFilteringBackwardSamplingHMM(Y, θ, μs, κs)
         
         # Sample emission parameters
         #println("Starting emission parameter sampling")
