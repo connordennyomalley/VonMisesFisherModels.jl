@@ -43,7 +43,8 @@ function predictProba(model::VonMisesFisherMixtureModel, data::AbstractArray)
         # Construct probability vector over the clusters.
         pvec = zeros(model.K)
         for kᵢ = 1:model.K
-            pvec[kᵢ] = exp(log(model.ϕ[kᵢ]) + logpdf(VonMisesFisher(model.μs[:, kᵢ], model.κs[kᵢ]), data[:,n]))
+            pvec[kᵢ] = exp(log(model.ϕ[kᵢ]) + logvMFpdfSum(model.μs[:, kᵢ], model.κs[kᵢ], data[:,n], 1))
+            # logpdf(VonMisesFisher(), data[:,n]))
         end
         pvec = pvec / sum(pvec)
 
