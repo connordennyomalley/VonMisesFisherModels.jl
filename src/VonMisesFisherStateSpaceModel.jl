@@ -17,7 +17,7 @@ function gibbsInference(model::VonMisesFisherStateSpaceModel, Y::Vector{Matrix{F
     M0 = emissionκGibbs(S, Y, model.emissionPrior)[end]
 
     # Transition concentration
-    C0 = transitionκGibbs(S, model.transitionPrior, 100)[end]
+    C0 = transitionκGibbs(S, model.transitionPrior; niter=100)[end]
 
     #C0chain = zeros(niter)
 
@@ -27,7 +27,7 @@ function gibbsInference(model::VonMisesFisherStateSpaceModel, Y::Vector{Matrix{F
         S = forwardFilteringStateSpaceSample(Y, numParticles, M0, C0)
 
         # Sample parameters of transition distribution
-        C0 = transitionκGibbs(S, model.transitionPrior, 100)[end]
+        C0 = transitionκGibbs(S, model.transitionPrior; niter=100)[end]
         #C0chain[i-1] = C0
 
         # Sample parameters of emission distribution
@@ -276,7 +276,7 @@ function logPdfκ(κ, x, prior)
     v
 end
 
-function transitionκGibbs(x, prior, niter)
+function transitionκGibbs(x, prior; niter::Int=100)
     κ = zeros(niter)
     κ[1] = 1.0
     
