@@ -11,22 +11,23 @@ export
     ## Temporal Models
     VonMisesFisherHiddenMarkovModel,
     VonMisesFisherStateSpaceModel,
-    # VonMisesFisherStateSpaceMixtureModel,
-
-    ## Metrics
-    randIndex,
     
     ## Training and Prediction
     predict,
     predictProba,
     fit,
     gibbsInference,
-    # filterAux,
-    # backwardSampling,
-    forwardFilteringBackwardSampling,
+
+    ## State space functions
+    forwardFilteringStateSpaceSample,
+    transitionκGibbs,
+    emissionκGibbs,
+    filterAux,
+    PLS,
 
     ## Utility functions
     vMFRandWood,
+    randIndex,
     tfidf
     
 include("TfIdf.jl")

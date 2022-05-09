@@ -106,11 +106,11 @@ function genDataStateSpace(T)
     NumSamples = 3
     D = 3
     
-    # Measurement Variance
-    M0 = 40.0
+    # Measurement Concentration
+    M0 = 60.0
     
-    # System Variance
-    C0 = 60.0 
+    # System Concentration
+    C0 = 60.0
     
     Y = Array{Matrix{Float64}}(undef, T)
     for t = 1:T
@@ -138,7 +138,7 @@ function genDataStateSpace(T)
 end
 
 function stateSpaceModelTest()
-    data, states = genDataStateSpace(1000)
+    data, states = genDataStateSpace(100)
 
     # Filtering
     # states, weights = filterAux(data, 5000, 40, 60)
@@ -146,13 +146,13 @@ function stateSpaceModelTest()
     #fs = rand(VonMisesFisher(states[20,rand(Categorical(weights[20,:])),:], 60))
     #sampledStates = backwardSampling(states, fs, 40)
     #sampledStates = forwardFilteringBackwardSampling(data, 1000, 40, 60)
-    println(states)
-    model = VonMisesFisherStateSpaceModel(Gamma(1.0, 6.0), Gamma(1.0, 6.0))
-    S, M0, C0 = gibbsInference(model, data, 50; numParticles=40)
+    #println(states)
+    model = VonMisesFisherStateSpaceModel(Gamma(10.0, 6.0), Gamma(10.0, 6.0))
+    S, M0, C0 = gibbsInference(model, data, 50; numParticles=50)
 
+    println("States: $(S)")
     println("Measurement κ: $(M0)")
     println("Transition κ: $(C0)")
-    println("States: $(S)")
 end
 
 function tfidfTest()
@@ -163,11 +163,11 @@ function tfidfTest()
     tfidf(corpus)
 end
 
-@test_nowarn mixtureTest()
-@test_nowarn basicModelTest()
-@test_nowarn mixturePredTest()
-#@test_nowarn hiddenMarkovModelTest()
-# @test_nowarn stateSpaceModelTest()
+# @test_nowarn mixtureTest()
+# @test_nowarn basicModelTest()
+# @test_nowarn mixturePredTest()
+# @test_nowarn hiddenMarkovModelTest()
+@test_nowarn stateSpaceModelTest()
 # @test_nowarn tfidfTest()
 
 

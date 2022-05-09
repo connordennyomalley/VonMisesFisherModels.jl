@@ -7,26 +7,31 @@ function gibbsInference(model::VonMisesFisherStateSpaceModel, Y::Vector{Matrix{F
     checkInputTemporal(Y)
     
     ## Initial Samples
+        
+    # Initial states estimate
+    S = map(sX -> sum(sX, dims=2) ./ size(sX)[2], Y)
+    S = map(sX -> sX ./ norm(sX), S)
+    S = reduce(hcat, S)
+    
     # M0 = Emission concentration
-    M0 = 40
+    M0 = emissionκGibbs(S, Y, model.emissionPrior)[end]
 
     # Transition concentration
-    C0 = 60
+    C0 = transitionκGibbs(S, model.transitionPrior, 100)[end]
 
-    
-    S = forwardFilteringBackwardSampling(Y, numParticles, M0, C0)
+    #C0chain = zeros(niter)
 
     #println("Beginning Gibbs Sampling...")
     for i = 2:(niter + 1)
         # Sample path through states
-        S = forwardFilteringBackwardSampling(Y, numParticles, M0, C0)
+        S = forwardFilteringStateSpaceSample(Y, numParticles, M0, C0)
 
         # Sample parameters of transition distribution
-        C0 = transitionPrecisionGibbs(S, model.transitionPrior, niter)[end]
+        C0 = transitionPrecisionGibbs(S, model.transitionPrior, 100)[end]
+        #C0chain[i-1] = C0
 
         # Sample parameters of emission distribution
-        M0 = gibbsEmissionκ(S, Y, model.emissionPrior)[end]
-
+        M0 = emissionκGibbs(S, Y, model.emissionPrior)[end]
         #println("$(i-1)/$(niter) ✅")
     end
     
@@ -48,8 +53,7 @@ function logpdfEmissionκ(X, Y, prior, κ)
     v
 end
 
-function gibbsEmissionκ(X, Y, prior)
-    niter = 100
+function emissionκGibbs(X, Y, prior; niter::Int=100)
     κ = zeros(niter)
     κ[1] = 1.0
     # println("State size $(size(X))")
@@ -58,7 +62,7 @@ function gibbsEmissionκ(X, Y, prior)
     for i = 2:niter
         κ[i] = sliceSample(v -> logpdfEmissionκ(X, Y, prior, v), 3, 3, 10, κ[i-1])[end]
     end
-    κ 
+    κ
 end
 
 function logpdfX(X, μ, κ)
@@ -151,7 +155,7 @@ function filterAux(Y, numParticles, M0, C0)
     α,w
 end
 
-function backwardSampling(X, filterSample, C0)
+function PLS(X, filterSample, C0)
     # X are filtering particles.
     
     T = size(X)[1]
@@ -183,19 +187,68 @@ function backwardSampling(X, filterSample, C0)
     sX
 end
 
-function forwardFilteringBackwardSampling(Y, numParticles, M0, C0)
+function backwardSampling(X, fw, filterSample, C0)
+    # X are filtering particles.
+    
+    T = size(X)[1]
+    N = size(X)[3]
+    D = size(X)[2]
+    
+    # Initial sample to work backwards from
+    sX = zeros(D,T)
+    sX[:,T] = filterSample
+    
+    for t = T-1:-1:1
+
+        # Compute probability over states for this time step and this particle i
+        pvec = zeros(N)
+        for j = 1:N
+            # Probability of being in the state at t+1
+            # probs going from state X[t,:,j] -> sX[:,t+1]
+            # X[t,:,j] is the particle under consideration.
+            ξ = logpdf(VonMisesFisher(X[t,:, j], C0), sX[:,t+1])
+
+            # Filtering
+            fv = 0
+            for k = 1:N
+                if j != k
+                    fv += log(fw[t,k]) + logpdf(VonMisesFisher(X[t,:,k], C0), X[t,:,j])
+                end
+            end
+
+            pvec[j] = ξ + fv
+        end
+        pvec = exp.(pvec .- maximum(pvec))
+        pvec = pvec / sum(pvec)
+
+        sX[:,t] = X[t,:,rand(Categorical(pvec))]
+
+    end
+
+    sX
+end
+
+function forwardFilteringStateSpaceSample(Y, numParticles, M0, C0)
     checkInputTemporal(Y)
 
     T = size(Y)[1]
-    
+    D = size(Y[1])[1]
+
     # Particle Filtering
     X, fw = filterAux(Y, numParticles, M0, C0)
 
     # Sample state at t=T
-    fs = rand(VonMisesFisher(X[T,:,rand(Categorical(fw[T,:]))], C0))
+    # fs = rand(VonMisesFisher(X[T,:,rand(Categorical(fw[T,:]))], C0))
     
+    S = zeros(D,T)
+    for t = T:-1:1
+       S[:,t] = rand(VonMisesFisher(X[t,:,rand(Categorical(fw[t,:]))], C0))
+       S[:,t] = S[:,t] / norm(S[:,t])
+    end
+    return S
+
     # Backward sampling using particles
-    backwardSampling(X, fs, M0)
+    # backwardSampling(X, fw, fs, C0)
 end
 
 function logPdfκ(κ, x, prior)
@@ -214,7 +267,8 @@ function logPdfκ(κ, x, prior)
     for t = 2:T
         #v *= log(pdf(VonMisesFisher(x[t-1,:], κ),x[t,:]))
         #v += (vMFpdf2(x[t-1,:], κ, x[t,:]))
-        v += logpdf(VonMisesFisher(x[:,t-1], κ), x[:,t])
+        x[:,t-1] = x[:,t-1] / norm(x[:,t-1])
+        v += logpdf(VonMisesFisher(x[:,t-1], κ), x[:,t])#logvMFpdfSum(x[:,t-1], κ, x[:,t], 1)
         #logvMFpdfSingle(x[t-1,:], κ, x[t,:])
     end
 
@@ -222,7 +276,7 @@ function logPdfκ(κ, x, prior)
     v
 end
 
-function transitionPrecisionGibbs(x, prior, niter)
+function transitionκGibbs(x, prior, niter)
     κ = zeros(niter)
     κ[1] = 1.0
     
