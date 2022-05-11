@@ -1,4 +1,4 @@
-
+# Adapted using 10.4.1 from https://dlmf.nist.gov/10.40
 function logbesseliApprox(ν, a)
     sqrt(a^2 + (ν + 1)^2) + (ν + 0.5) * log(a / (ν + 0.5 + sqrt(a^2 + (ν + 1)^2))) - 0.5 * log(a/2) + (ν + 0.5) * log((2 * ν + 3/2)/(2* (ν + 1))) - 0.5 * log(2 * π)
 end

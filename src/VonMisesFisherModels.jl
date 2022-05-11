@@ -28,6 +28,7 @@ export
     ## Utility functions
     vMFRandWood,
     randIndex,
+    sliceSample,
     tfidf
     
 include("TfIdf.jl")
